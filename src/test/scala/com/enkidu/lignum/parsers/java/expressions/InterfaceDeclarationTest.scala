@@ -1,24 +1,32 @@
 package com.enkidu.lignum.parsers.java.expressions
 
-import com.enkidu.lignum.parsers.types._
-import com.enkidu.lignum.parsers.expressions._
-import com.enkidu.lignum.parsers.statements._
 import com.enkidu.lignum.parsers.ParserTest
-import com.enkidu.lignum.parsers.JavaParser
+import com.enkidu.lignum.parsers.ast.expression.discardable.dimension.AbstractDimension
+import com.enkidu.lignum.parsers.ast.expression.discardable.literals.IntegerLiteral
+import com.enkidu.lignum.parsers.ast.expression.types.annotations.MarkerAnnotation
+import com.enkidu.lignum.parsers.ast.expression.types.primitives.IntegerPrimitive
+import com.enkidu.lignum.parsers.ast.expression.types.references.{ArrayType, ClassType}
+import com.enkidu.lignum.parsers.ast.expression.types.templates.ParameterTemplate
+import com.enkidu.lignum.parsers.ast.statement._
+import com.enkidu.lignum.parsers.ast.statement.declaration.members._
+import com.enkidu.lignum.parsers.ast.statement.declaration.types.{AnnotationDeclaration, InterfaceDeclaration, TypeDeclaration}
+import com.enkidu.lignum.parsers.ast.statement.declarator.{InitializedVariableDeclarator, MethodDeclarator, VariableDeclarator}
+import com.enkidu.lignum.parsers.ast.statement.modifers._
+import com.enkidu.lignum.parsers.java.v8.JavaCompilationUnitParser
 
 class InterfaceDeclarationTest extends ParserTest {
   def parse(string: String): TypeDeclaration = {
-    implicit val parser = new JavaParser(string)
+    implicit val parser = new JavaCompilationUnitParser(string)
     get(parser.typeDeclaration.run())
   }
 
-  def Interface(body: MemberDeclaration*) = Declaration.Interface(Vector, Vector, "A", Vector, Vector, body.toVector)
-  def Annotation(body: MemberDeclaration*) = Declaration.Annotation(Vector, Vector, "A", body.toVector)
+  def Interface(body: MemberDeclaration*) = InterfaceDeclaration(Vector, Vector, "A", Vector, Vector, body.toVector)
+  def Annotation(body: MemberDeclaration*) = AnnotationDeclaration(Vector, Vector, "A", body.toVector)
 
   "Interface parser should parse" - {
     "interfaces" - {
       "interface A extends A1, A2" in {
-        parse("interface A extends A1, A2{}") shouldBe Declaration.Interface(
+        parse("interface A extends A1, A2{}") shouldBe InterfaceDeclaration(
           Vector,
           Vector,
           "A",
@@ -27,7 +35,7 @@ class InterfaceDeclarationTest extends ParserTest {
           Vector)
       }
       "@A interface A{}" in {
-        parse("@A interface A{}") shouldBe Declaration.Interface(
+        parse("@A interface A{}") shouldBe InterfaceDeclaration(
           Vector(MarkerAnnotation("A")),
           Vector,
           "A",
@@ -36,61 +44,61 @@ class InterfaceDeclarationTest extends ParserTest {
           Vector)
       }
       "public interface A{}" in {
-        parse("public interface A{}") shouldBe Declaration.Interface(
+        parse("public interface A{}") shouldBe InterfaceDeclaration(
           Vector,
-          Vector(Modifier.Public),
+          Vector(Public),
           "A",
           Vector,
           Vector,
           Vector)
       }
       "protected interface A{}" in {
-        parse("protected interface A{}") shouldBe Declaration.Interface(
+        parse("protected interface A{}") shouldBe InterfaceDeclaration(
           Vector,
-          Vector(Modifier.Protected),
+          Vector(Protected),
           "A",
           Vector,
           Vector,
           Vector)
       }
       "private  interface A{}" in {
-        parse("private  interface A{}") shouldBe Declaration.Interface(
+        parse("private  interface A{}") shouldBe InterfaceDeclaration(
           Vector,
-          Vector(Modifier.Private),
+          Vector(Private),
           "A",
           Vector,
           Vector,
           Vector)
       }
       "abstract interface A{}" in {
-        parse("abstract interface A{}") shouldBe Declaration.Interface(
+        parse("abstract interface A{}") shouldBe InterfaceDeclaration(
           Vector,
-          Vector(Modifier.Abstract),
+          Vector(Abstract),
           "A",
           Vector,
           Vector,
           Vector)
       }
       "static interface A{}" in {
-        parse("static interface A{}") shouldBe Declaration.Interface(
+        parse("static interface A{}") shouldBe InterfaceDeclaration(
           Vector,
-          Vector(Modifier.Static),
+          Vector(Static),
           "A",
           Vector,
           Vector,
           Vector)
       }
       "strictfp interface A{}" in {
-        parse("strictfp interface A{}") shouldBe Declaration.Interface(
+        parse("strictfp interface A{}") shouldBe InterfaceDeclaration(
           Vector,
-          Vector(Modifier.Strictfp),
+          Vector(Strictfp),
           "A",
           Vector,
           Vector,
           Vector)
       }
       "interface A extends B{}" in {
-        parse("interface A extends B{}") shouldBe Declaration.Interface(
+        parse("interface A extends B{}") shouldBe InterfaceDeclaration(
           Vector,
           Vector,
           "A",
@@ -99,201 +107,201 @@ class InterfaceDeclarationTest extends ParserTest {
           Vector)
       }
       "interface A<T> {}" in {
-        parse("interface A<T> {}") shouldBe Declaration.Interface(
+        parse("interface A<T> {}") shouldBe InterfaceDeclaration(
           Vector,
           Vector,
           "A",
-          Vector(Template.Parameter(Vector, "T")),
+          Vector(ParameterTemplate(Vector, "T")),
           Vector,
           Vector)
       }
       "interface A{ public static final int a; }" in {
-        parse("interface A{ public static final int a; }") shouldBe Interface(Declaration.Constant(
+        parse("interface A{ public static final int a; }") shouldBe Interface(ConstantDeclaration(
           Vector,
-          Vector(Modifier.Public, Modifier.Static, Modifier.Final),
-          PrimitiveType.Integer(Vector),
-          Vector(Declarator.Variable("a"))))
+          Vector(Public, Static, Final),
+          IntegerPrimitive(Vector),
+          Vector(VariableDeclarator("a"))))
       }
       "interface A{ @A public static final int a = 5; }" in {
-        parse("interface A{ @A public static final int a = 5; }") shouldBe Interface(Declaration.Constant(
+        parse("interface A{ @A public static final int a = 5; }") shouldBe Interface(ConstantDeclaration(
           Vector(MarkerAnnotation(Vector("A"))),
-          Vector(Modifier.Public, Modifier.Static, Modifier.Final),
-          PrimitiveType.Integer(Vector),
-          Vector(Declarator.InitializedVariable("a", PrimitiveLiteral("5")))))
+          Vector(Public, Static, Final),
+          IntegerPrimitive(Vector),
+          Vector(InitializedVariableDeclarator("a", IntegerLiteral("5")))))
       }
       "interface A{ int f(); }" in {
-        parse("interface A{ int f(); }") shouldBe Interface(Declaration.InterfaceMethod(
+        parse("interface A{ int f(); }") shouldBe Interface(InterfaceMethodDeclaration(
           Vector,
           Vector,
           Vector,
-          PrimitiveType.Integer(Vector),
-          Declarator.Method("f", Vector),
+          IntegerPrimitive(Vector),
+          MethodDeclarator("f", Vector),
           Vector,
           EmptyStatement))
       }
       "interface A{ @A int f(); }" in {
-        parse("interface A{ @A int f(); }") shouldBe Interface(Declaration.InterfaceMethod(
+        parse("interface A{ @A int f(); }") shouldBe Interface(InterfaceMethodDeclaration(
           Vector(MarkerAnnotation("A")),
           Vector,
           Vector,
-          PrimitiveType.Integer(Vector),
-          Declarator.Method("f", Vector),
+          IntegerPrimitive(Vector),
+          MethodDeclarator("f", Vector),
           Vector,
           EmptyStatement))
       }
       "interface A{ public int f(); }" in {
-        parse("interface A{ public int f(); }") shouldBe Interface(Declaration.InterfaceMethod(
+        parse("interface A{ public int f(); }") shouldBe Interface(InterfaceMethodDeclaration(
           Vector,
-          Vector(Modifier.Public),
+          Vector(Public),
           Vector,
-          PrimitiveType.Integer(Vector),
-          Declarator.Method("f", Vector),
+          IntegerPrimitive(Vector),
+          MethodDeclarator("f", Vector),
           Vector,
           EmptyStatement))
       }
       "interface A{ abstract int f(); }" in {
-        parse("interface A{ abstract int f(); }") shouldBe Interface(Declaration.InterfaceMethod(
+        parse("interface A{ abstract int f(); }") shouldBe Interface(InterfaceMethodDeclaration(
           Vector,
-          Vector(Modifier.Abstract),
+          Vector(Abstract),
           Vector,
-          PrimitiveType.Integer(Vector),
-          Declarator.Method("f", Vector),
+          IntegerPrimitive(Vector),
+          MethodDeclarator("f", Vector),
           Vector,
           EmptyStatement))
       }
       "interface A{ default int f(); }" in {
-        parse("interface A{ default int f(); }") shouldBe Interface(Declaration.InterfaceMethod(
+        parse("interface A{ default int f(); }") shouldBe Interface(InterfaceMethodDeclaration(
           Vector,
-          Vector(Modifier.Default),
+          Vector(Default),
           Vector,
-          PrimitiveType.Integer(Vector),
-          Declarator.Method("f", Vector),
+          IntegerPrimitive(Vector),
+          MethodDeclarator("f", Vector),
           Vector,
           EmptyStatement))
       }
       "interface A{ static int f(); }" in {
-        parse("interface A{ static int f(); }") shouldBe Interface(Declaration.InterfaceMethod(
+        parse("interface A{ static int f(); }") shouldBe Interface(InterfaceMethodDeclaration(
           Vector,
-          Vector(Modifier.Static),
+          Vector(Static),
           Vector,
-          PrimitiveType.Integer(Vector),
-          Declarator.Method("f", Vector),
+          IntegerPrimitive(Vector),
+          MethodDeclarator("f", Vector),
           Vector,
           EmptyStatement))
       }
       "interface A{ strictfp int f(); }" in {
-        parse("interface A{ strictfp int f(); }") shouldBe Interface(Declaration.InterfaceMethod(
+        parse("interface A{ strictfp int f(); }") shouldBe Interface(InterfaceMethodDeclaration(
           Vector,
-          Vector(Modifier.Strictfp),
+          Vector(Strictfp),
           Vector,
-          PrimitiveType.Integer(Vector),
-          Declarator.Method("f", Vector),
+          IntegerPrimitive(Vector),
+          MethodDeclarator("f", Vector),
           Vector,
           EmptyStatement))
       }
       "interface A{ default int f(){;} }" in {
-        parse("interface A{ default int f(){;} }") shouldBe Interface(Declaration.InterfaceMethod(
+        parse("interface A{ default int f(){;} }") shouldBe Interface(InterfaceMethodDeclaration(
           Vector,
-          Vector(Modifier.Default),
+          Vector(Default),
           Vector,
-          PrimitiveType.Integer(Vector),
-          Declarator.Method("f", Vector),
+          IntegerPrimitive(Vector),
+          MethodDeclarator("f", Vector),
           Vector,
           Block(Vector(EmptyStatement))))
       }
     }
     "annotations" - {
       "@A @interface A{}" in {
-        parse("@A @interface A{}") shouldBe Declaration.Annotation(
+        parse("@A @interface A{}") shouldBe AnnotationDeclaration(
           Vector(MarkerAnnotation("A")),
           Vector,
           "A",
           Vector)
       }
       "public @interface A{}" in {
-        parse("public @interface A{}") shouldBe Declaration.Annotation(
+        parse("public @interface A{}") shouldBe AnnotationDeclaration(
           Vector,
-          Vector(Modifier.Public),
+          Vector(Public),
           "A",
           Vector)
       }
       "protected @interface A{}" in {
-        parse("protected @interface A{}") shouldBe Declaration.Annotation(
+        parse("protected @interface A{}") shouldBe AnnotationDeclaration(
           Vector,
-          Vector(Modifier.Protected),
+          Vector(Protected),
           "A",
           Vector)
       }
       "private @interface A{}" in {
-        parse("private @interface A{}") shouldBe Declaration.Annotation(
+        parse("private @interface A{}") shouldBe AnnotationDeclaration(
           Vector,
-          Vector(Modifier.Private),
+          Vector(Private),
           "A",
           Vector)
       }
       "abstract @interface A{}" in {
-        parse("abstract @interface A{}") shouldBe Declaration.Annotation(
+        parse("abstract @interface A{}") shouldBe AnnotationDeclaration(
           Vector,
-          Vector(Modifier.Abstract),
+          Vector(Abstract),
           "A",
           Vector)
       }
       "static @interface A{}" in {
-        parse("static @interface A{}") shouldBe Declaration.Annotation(
+        parse("static @interface A{}") shouldBe AnnotationDeclaration(
           Vector,
-          Vector(Modifier.Static),
+          Vector(Static),
           "A",
           Vector)
       }
       "strictfp @interface A{}" in {
-        parse("strictfp @interface A{}") shouldBe Declaration.Annotation(
+        parse("strictfp @interface A{}") shouldBe AnnotationDeclaration(
           Vector,
-          Vector(Modifier.Strictfp),
+          Vector(Strictfp),
           "A",
           Vector)
       }
       "@interface A{ int a();}" in {
-        parse("@interface A{ int a();}") shouldBe Annotation(Declaration.AnnotationElement(
+        parse("@interface A{ int a();}") shouldBe Annotation(AnnotationElementDeclaration(
           Vector,
           Vector,
-          PrimitiveType.Integer(Vector),
+          IntegerPrimitive(Vector),
           "a"))
       }
       "@interface A{ @A int a();}" in {
-        parse("@interface A{ @A int a();}") shouldBe Annotation(Declaration.AnnotationElement(
+        parse("@interface A{ @A int a();}") shouldBe Annotation(AnnotationElementDeclaration(
           Vector(MarkerAnnotation("A")),
           Vector,
-          PrimitiveType.Integer(Vector),
+          IntegerPrimitive(Vector),
           "a"))
       }
       "@interface A{ public int a();}" in {
-        parse("@interface A{ public int a();}") shouldBe Annotation(Declaration.AnnotationElement(
+        parse("@interface A{ public int a();}") shouldBe Annotation(AnnotationElementDeclaration(
           Vector,
-          Vector(Modifier.Public),
-          PrimitiveType.Integer(Vector),
+          Vector(Public),
+          IntegerPrimitive(Vector),
           "a"))
       }
       "@interface A{ abstract int a();}" in {
-        parse("@interface A{ abstract int a();}") shouldBe Annotation(Declaration.AnnotationElement(
+        parse("@interface A{ abstract int a();}") shouldBe Annotation(AnnotationElementDeclaration(
           Vector,
-          Vector(Modifier.Abstract),
-          PrimitiveType.Integer(Vector),
+          Vector(Abstract),
+          IntegerPrimitive(Vector),
           "a"))
       }
       "@interface A{ int a()[];}" in {
-        parse("@interface A{ int a()[];}") shouldBe Annotation(Declaration.AnnotationElement(
+        parse("@interface A{ int a()[];}") shouldBe Annotation(AnnotationElementDeclaration(
           Vector,
           Vector,
-          ArrayType(PrimitiveType.Integer(Vector), Vector(AbstractDimension(Vector))),
+          ArrayType(IntegerPrimitive(Vector), Vector(AbstractDimension(Vector))),
           "a"))
       }
       "@interface A{ int a() default 3;}" in {
-        parse("@interface A{ int a() default 3;}") shouldBe Annotation(Declaration.AnnotationDefaultElement(
+        parse("@interface A{ int a() default 3;}") shouldBe Annotation(AnnotationDefaultElementDeclaration(
           Vector,
           Vector,
-          PrimitiveType.Integer(Vector),
+          IntegerPrimitive(Vector),
           "a",
-          PrimitiveLiteral("3")))
+          IntegerLiteral("3")))
       }
     }
   }

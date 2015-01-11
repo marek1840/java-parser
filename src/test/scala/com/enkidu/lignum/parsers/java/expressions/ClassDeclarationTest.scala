@@ -1,14 +1,29 @@
 package com.enkidu.lignum.parsers.java.expressions
 
-import com.enkidu.lignum.parsers.types._
-import com.enkidu.lignum.parsers.expressions._
-import com.enkidu.lignum.parsers.statements._
 import com.enkidu.lignum.parsers.ParserTest
-import com.enkidu.lignum.parsers.JavaParser
+import com.enkidu.lignum.parsers.ast.expression.discardable.Select
+import com.enkidu.lignum.parsers.ast.expression.discardable.binary.MethodInvocation
+import com.enkidu.lignum.parsers.ast.expression.discardable.dimension.AbstractDimension
+import com.enkidu.lignum.parsers.ast.expression.discardable.instantiation.SimpleObjectInstantiation
+import com.enkidu.lignum.parsers.ast.expression.discardable.literals.{CharLiteral, IntegerLiteral}
+import com.enkidu.lignum.parsers.ast.expression.types.annotations.MarkerAnnotation
+import com.enkidu.lignum.parsers.ast.expression.types.coupled.ChildOfAll
+import com.enkidu.lignum.parsers.ast.expression.types.primitives.{BytePrimitive, IntegerPrimitive}
+import com.enkidu.lignum.parsers.ast.expression.types.references.{ArrayType, ClassType}
+import com.enkidu.lignum.parsers.ast.expression.types.templates.{ArgumentTemplate, BoundedParameterTemplate, ParameterTemplate}
+import com.enkidu.lignum.parsers.ast.statement._
+import com.enkidu.lignum.parsers.ast.statement.constructor.{AlternateConstructorInvocation, IndirectParentConstructorInvocation, IntermidiateConstructorInvocation, ParentConstructorInvocation}
+import com.enkidu.lignum.parsers.ast.statement.declaration.initializers.{InstanceInitializerDeclaration, StaticInitializerDeclaration}
+import com.enkidu.lignum.parsers.ast.statement.declaration.members._
+import com.enkidu.lignum.parsers.ast.statement.declaration.types.{ClassDeclaration, EmptyDeclaration, EnumDeclaration, TypeDeclaration}
+import com.enkidu.lignum.parsers.ast.statement.declarator._
+import com.enkidu.lignum.parsers.ast.statement.modifers._
+import com.enkidu.lignum.parsers.ast.statement.parameter.{FormalParameter, InstanceReceiverParameter, NestedReceiverParameter, VariableArityParameter}
+import com.enkidu.lignum.parsers.java.v8.JavaCompilationUnitParser
 
 class ClassDeclarationTest extends ParserTest {
   def parse(string: String): TypeDeclaration = {
-    implicit val parser = new JavaParser(string)
+    implicit val parser = new JavaCompilationUnitParser(string)
     get(parser.typeDeclaration.run())
   }
 
@@ -69,192 +84,192 @@ class ClassDeclarationTest extends ParserTest {
   val c21 = "class A{A(){} A(int a){}}"
   val c22 = "class A{private static final byte PAD = '=';}"
 
-  def Class(body: MemberDeclaration*) = Declaration.Class(Vector, Vector, "A", Vector, None, Vector, body.toVector)
+  def Class(body: MemberDeclaration*) = ClassDeclaration(Vector, Vector, "A", Vector, None, Vector, body.toVector)
 
   "Class Declaration parser should parse" - {
     "classes with empty body" - {
-      "class A{}" in { parse("class A{}") shouldBe Declaration.Class(Vector, Vector, "A", Vector, None, Vector, Vector) }
-      "@A public class A{}" in { parse("@A public class A{}") shouldBe Declaration.Class(Vector(MarkerAnnotation("A")), Vector(Modifier.Public), "A", Vector, None, Vector, Vector) }
-      "public class A{}" in { parse("public class A{}") shouldBe Declaration.Class(Vector, Vector(Modifier.Public), "A", Vector, None, Vector, Vector) }
-      "protected class A{}" in { parse("protected class A{}") shouldBe Declaration.Class(Vector, Vector(Modifier.Protected), "A", Vector, None, Vector, Vector) }
-      "private class A{}" in { parse("private class A{}") shouldBe Declaration.Class(Vector, Vector(Modifier.Private), "A", Vector, None, Vector, Vector) }
-      "abstract class A{}" in { parse("abstract class A{}") shouldBe Declaration.Class(Vector, Vector(Modifier.Abstract), "A", Vector, None, Vector, Vector) }
-      "static class A{}" in { parse("static class A{}") shouldBe Declaration.Class(Vector, Vector(Modifier.Static), "A", Vector, None, Vector, Vector) }
-      "final class A{}" in { parse("final class A{}") shouldBe Declaration.Class(Vector, Vector(Modifier.Final), "A", Vector, None, Vector, Vector) }
-      "strictfp class A{}" in { parse("strictfp class A{}") shouldBe Declaration.Class(Vector, Vector(Modifier.Strictfp), "A", Vector, None, Vector, Vector) }
-      "class A extends B{}" in { parse("class A extends B{}") shouldBe Declaration.Class(Vector, Vector, "A", Vector, ClassType(Vector, None, "B", Vector), Vector, Vector) }
-      "class A implements B{}" in { parse("class A implements B{}") shouldBe Declaration.Class(Vector, Vector, "A", Vector, None, Vector(ClassType(Vector, None, "B", Vector)), Vector) }
-      "class A extends B implements C, D{}" in { parse("class A extends B implements C, D{}") shouldBe Declaration.Class(Vector, Vector, "A", Vector, ClassType(Vector, None, "B", Vector), Vector(ClassType(Vector, None, "C", Vector), ClassType(Vector, None, "D", Vector)), Vector) }
-      "class A<T, U extends V, @A X extends V & I1& I2> extends B{}" in { parse("class A<T, U extends V, @A X extends V & I1& I2> extends B{}") shouldBe Declaration.Class(Vector, Vector, "A", Vector(Template.Parameter(Vector, "T"), Template.BoundedParameter(Vector, "U", ClassType(Vector, None, "V", Vector)), Template.BoundedParameter(Vector(MarkerAnnotation("A")), "X", ChildOfAll(Vector(ClassType(Vector, None, "V", Vector), ClassType(Vector, None, "I1", Vector), ClassType(Vector, None, "I2", Vector))))), ClassType(Vector, None, "B", Vector), Vector, Vector) }
+      "class A{}" in { parse("class A{}") shouldBe ClassDeclaration(Vector, Vector, "A", Vector, None, Vector, Vector) }
+      "@A public class A{}" in { parse("@A public class A{}") shouldBe ClassDeclaration(Vector(MarkerAnnotation("A")), Vector(Public), "A", Vector, None, Vector, Vector) }
+      "public class A{}" in { parse("public class A{}") shouldBe ClassDeclaration(Vector, Vector(Public), "A", Vector, None, Vector, Vector) }
+      "protected class A{}" in { parse("protected class A{}") shouldBe ClassDeclaration(Vector, Vector(Protected), "A", Vector, None, Vector, Vector) }
+      "private class A{}" in { parse("private class A{}") shouldBe ClassDeclaration(Vector, Vector(Private), "A", Vector, None, Vector, Vector) }
+      "abstract class A{}" in { parse("abstract class A{}") shouldBe ClassDeclaration(Vector, Vector(Abstract), "A", Vector, None, Vector, Vector) }
+      "static class A{}" in { parse("static class A{}") shouldBe ClassDeclaration(Vector, Vector(Static), "A", Vector, None, Vector, Vector) }
+      "final class A{}" in { parse("final class A{}") shouldBe ClassDeclaration(Vector, Vector(Final), "A", Vector, None, Vector, Vector) }
+      "strictfp class A{}" in { parse("strictfp class A{}") shouldBe ClassDeclaration(Vector, Vector(Strictfp), "A", Vector, None, Vector, Vector) }
+      "class A extends B{}" in { parse("class A extends B{}") shouldBe ClassDeclaration(Vector, Vector, "A", Vector, ClassType(Vector, None, "B", Vector), Vector, Vector) }
+      "class A implements B{}" in { parse("class A implements B{}") shouldBe ClassDeclaration(Vector, Vector, "A", Vector, None, Vector(ClassType(Vector, None, "B", Vector)), Vector) }
+      "class A extends B implements C, D{}" in { parse("class A extends B implements C, D{}") shouldBe ClassDeclaration(Vector, Vector, "A", Vector, ClassType(Vector, None, "B", Vector), Vector(ClassType(Vector, None, "C", Vector), ClassType(Vector, None, "D", Vector)), Vector) }
+      "class A<T, U extends V, @A X extends V & I1& I2> extends B{}" in { parse("class A<T, U extends V, @A X extends V & I1& I2> extends B{}") shouldBe ClassDeclaration(Vector, Vector, "A", Vector(ParameterTemplate(Vector, "T"), BoundedParameterTemplate(Vector, "U", ClassType(Vector, None, "V", Vector)), BoundedParameterTemplate(Vector(MarkerAnnotation("A")), "X", ChildOfAll(Vector(ClassType(Vector, None, "V", Vector), ClassType(Vector, None, "I1", Vector), ClassType(Vector, None, "I2", Vector))))), ClassType(Vector, None, "B", Vector), Vector, Vector) }
     }
 
     "classes with members" - {
-      "class A{;}" in { parse("class A{;}") shouldBe Class(Declaration.Empty) }
+      "class A{;}" in { parse("class A{;}") shouldBe Class(EmptyDeclaration) }
       "fields" - {
-        f0 in { parse(f0) shouldBe Class(Declaration.Field(Vector, Vector(), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f1 in { parse(f1) shouldBe Class(Declaration.Field(Vector(MarkerAnnotation("A")), Vector, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f2 in { parse(f2) shouldBe Class(Declaration.Field(Vector, Vector(Modifier.Public), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f3 in { parse(f3) shouldBe Class(Declaration.Field(Vector, Vector(Modifier.Protected), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f4 in { parse(f4) shouldBe Class(Declaration.Field(Vector, Vector(Modifier.Private), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f5 in { parse(f5) shouldBe Class(Declaration.Field(Vector, Vector(Modifier.Static), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f6 in { parse(f6) shouldBe Class(Declaration.Field(Vector, Vector(Modifier.Final), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f7 in { parse(f7) shouldBe Class(Declaration.Field(Vector, Vector(Modifier.Transient), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f8 in { parse(f8) shouldBe Class(Declaration.Field(Vector, Vector(Modifier.Volatile), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f9 in { parse(f9) shouldBe Class(Declaration.Field(Vector(MarkerAnnotation("A")), Vector(Modifier.Volatile), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a")))) }
-        f10 in { parse(f10) shouldBe Class(Declaration.Field(Vector, Vector(), PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a"), Declarator.Variable("b")))) }
+        f0 in { parse(f0) shouldBe Class(FieldDeclaration(Vector, Vector(), IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f1 in { parse(f1) shouldBe Class(FieldDeclaration(Vector(MarkerAnnotation("A")), Vector, IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f2 in { parse(f2) shouldBe Class(FieldDeclaration(Vector, Vector(Public), IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f3 in { parse(f3) shouldBe Class(FieldDeclaration(Vector, Vector(Protected), IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f4 in { parse(f4) shouldBe Class(FieldDeclaration(Vector, Vector(Private), IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f5 in { parse(f5) shouldBe Class(FieldDeclaration(Vector, Vector(Static), IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f6 in { parse(f6) shouldBe Class(FieldDeclaration(Vector, Vector(Final), IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f7 in { parse(f7) shouldBe Class(FieldDeclaration(Vector, Vector(Transient), IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f8 in { parse(f8) shouldBe Class(FieldDeclaration(Vector, Vector(Volatile), IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f9 in { parse(f9) shouldBe Class(FieldDeclaration(Vector(MarkerAnnotation("A")), Vector(Volatile), IntegerPrimitive(Vector), Vector(VariableDeclarator("a")))) }
+        f10 in { parse(f10) shouldBe Class(FieldDeclaration(Vector, Vector(), IntegerPrimitive(Vector), Vector(VariableDeclarator("a"), VariableDeclarator("b")))) }
       }
       "methods" - {
         m0 in {
-          parse(m0) shouldBe Class(Declaration.Method(
+          parse(m0) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m1 in {
-          parse(m1) shouldBe Class(Declaration.Method(
+          parse(m1) shouldBe Class(MethodDeclaration(
             Vector(),
-            Vector(Modifier.Public),
+            Vector(Public),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m2 in {
-          parse(m2) shouldBe Class(Declaration.Method(
+          parse(m2) shouldBe Class(MethodDeclaration(
             Vector(),
-            Vector(Modifier.Protected),
+            Vector(Protected),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m3 in {
-          parse(m3) shouldBe Class(Declaration.Method(
+          parse(m3) shouldBe Class(MethodDeclaration(
             Vector(),
-            Vector(Modifier.Private),
+            Vector(Private),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m4 in {
-          parse(m4) shouldBe Class(Declaration.Method(
+          parse(m4) shouldBe Class(MethodDeclaration(
             Vector(),
-            Vector(Modifier.Abstract),
+            Vector(Abstract),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m5 in {
-          parse(m5) shouldBe Class(Declaration.Method(
+          parse(m5) shouldBe Class(MethodDeclaration(
             Vector(),
-            Vector(Modifier.Static),
+            Vector(Static),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m6 in {
-          parse(m6) shouldBe Class(Declaration.Method(
+          parse(m6) shouldBe Class(MethodDeclaration(
             Vector(),
-            Vector(Modifier.Final),
+            Vector(Final),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m7 in {
-          parse(m7) shouldBe Class(Declaration.Method(
+          parse(m7) shouldBe Class(MethodDeclaration(
             Vector(),
-            Vector(Modifier.Synchronized),
+            Vector(Synchronized),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m8 in {
-          parse(m8) shouldBe Class(Declaration.Method(
+          parse(m8) shouldBe Class(MethodDeclaration(
             Vector(),
-            Vector(Modifier.Native),
+            Vector(Native),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m9 in {
-          parse(m9) shouldBe Class(Declaration.Method(
+          parse(m9) shouldBe Class(MethodDeclaration(
             Vector(),
-            Vector(Modifier.Strictfp),
+            Vector(Strictfp),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m10 in {
-          parse(m10) shouldBe Class(Declaration.Method(
+          parse(m10) shouldBe Class(MethodDeclaration(
             Vector(MarkerAnnotation("A")),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m11 in {
-          parse(m11) shouldBe Class(Declaration.Method(
+          parse(m11) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
-            Vector(Template.Parameter(Vector, "T")),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            Vector(ParameterTemplate(Vector, "T")),
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             Block(Vector)))
         }
         m12 in {
-          parse(m12) shouldBe Class(Declaration.Method(
+          parse(m12) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.ArrayMethod(
+            IntegerPrimitive(Vector),
+            ArrayMethodDeclarator(
               "f",
               Vector(),
               Vector(AbstractDimension(Vector))),
@@ -262,12 +277,12 @@ class ClassDeclarationTest extends ParserTest {
             Block(Vector)))
         }
         m13 in {
-          parse(m13) shouldBe Class(Declaration.Method(
+          parse(m13) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(
@@ -276,322 +291,323 @@ class ClassDeclarationTest extends ParserTest {
             Block(Vector)))
         }
         m14 in {
-          parse(m14) shouldBe Class(Declaration.Method(
+          parse(m14) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector()),
             Vector(),
             EmptyStatement))
         }
         m15 in {
-          parse(m15) shouldBe Class(Declaration.Method(
+          parse(m15) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
-              Vector(Parameter.Formal(Vector, false, PrimitiveType.Integer(Vector), "a"))),
+              Vector(FormalParameter(Vector, false, IntegerPrimitive(Vector), "a"))),
             Vector(),
             Block(Vector)))
         }
         m16 in {
-          parse(m16) shouldBe Class(Declaration.Method(
+          parse(m16) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
-              Vector(Parameter.VariableArity(Vector, false, PrimitiveType.Integer(Vector), "a"))),
+              Vector(VariableArityParameter(Vector, false, IntegerPrimitive(Vector), "a"))),
             Vector(),
             Block(Vector)))
         }
         m17 in {
-          parse(m17) shouldBe Class(Declaration.Method(
+          parse(m17) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
               Vector(
-                Parameter.Formal(Vector, false, PrimitiveType.Integer(Vector), "a"),
-                Parameter.Formal(Vector, false, ArrayType(PrimitiveType.Integer(Vector), Vector(AbstractDimension(Vector))), "b"))),
+                FormalParameter(Vector, false, IntegerPrimitive(Vector), "a"),
+                FormalParameter(Vector, false, ArrayType(IntegerPrimitive(Vector), Vector(AbstractDimension(Vector))), "b"))),
             Vector(),
             Block(Vector)))
         }
         m18 in {
-          parse(m18) shouldBe Class(Declaration.Method(
+          parse(m18) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
-              Vector(Parameter.Formal(Vector, false, PrimitiveType.Integer(Vector), "a"),
-                Parameter.VariableArity(Vector, false, ArrayType(PrimitiveType.Integer(Vector), Vector(AbstractDimension(Vector))), "b"))),
+              Vector(FormalParameter(Vector, false, IntegerPrimitive(Vector), "a"),
+                VariableArityParameter(Vector, false, ArrayType(IntegerPrimitive(Vector), Vector(AbstractDimension(Vector))), "b"))),
             Vector(),
             Block(Vector)))
         }
         m19 in {
-          parse(m19) shouldBe Class(Declaration.Method(
+          parse(m19) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
-              Vector(Parameter.InstanceReceiver(Vector(MarkerAnnotation("A")), ClassType(Vector, None, "A", Vector)))),
+              Vector(InstanceReceiverParameter(Vector(MarkerAnnotation("A")), ClassType(Vector, None, "A", Vector)))),
             Vector(),
             Block(Vector)))
         }
         m20 in {
-          parse(m20) shouldBe Class(Declaration.Method(
+          parse(m20) shouldBe Class(MethodDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            PrimitiveType.Integer(Vector),
-            Declarator.Method(
+            IntegerPrimitive(Vector),
+            MethodDeclarator(
               "f",
-              Vector(Parameter.NestedReceiver(Vector(MarkerAnnotation("A")), ClassType(Vector, None, "A", Vector), "A"))),
+              Vector(NestedReceiverParameter(Vector(MarkerAnnotation("A")), ClassType(Vector, None, "A", Vector), "A"))),
             Vector(),
             Block(Vector)))
         }
       }
       "initializers" - {
-        "class A{{}}" in { parse("class A{{}}") shouldBe Class(Declaration.InstanceInitializer(Block(Vector))) }
-        "class A{static {}}" in { parse("class A{static {}}") shouldBe Class(Declaration.StaticInitializer(Block(Vector))) }
+        "class A{{}}" in { parse("class A{{}}") shouldBe Class(InstanceInitializerDeclaration(Block(Vector))) }
+        "class A{static {}}" in { parse("class A{static {}}") shouldBe Class(StaticInitializerDeclaration(Block(Vector))) }
       }
       "constructors" - {
         c1 in {
-          parse(c1) shouldBe Class(Declaration.Constructor(
+          parse(c1) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector)))
         }
         c2 in {
-          parse(c2) shouldBe Class(Declaration.Constructor(
+          parse(c2) shouldBe Class(ConstructorDeclaration(
             Vector(),
-            Vector(Modifier.Private),
+            Vector(Private),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector)))
         }
         c3 in {
-          parse(c3) shouldBe Class(Declaration.Constructor(
+          parse(c3) shouldBe Class(ConstructorDeclaration(
             Vector(),
-            Vector(Modifier.Protected),
+            Vector(Protected),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector)))
         }
         c4 in {
-          parse(c4) shouldBe Class(Declaration.Constructor(
+          parse(c4) shouldBe Class(ConstructorDeclaration(
             Vector(),
-            Vector(Modifier.Public),
+            Vector(Public),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector)))
         }
         c5 in {
-          parse(c5) shouldBe Class(Declaration.Constructor(
+          parse(c5) shouldBe Class(ConstructorDeclaration(
             Vector(MarkerAnnotation("A")),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector)))
         }
         c6 in {
-          parse(c6) shouldBe Class(Declaration.Constructor(
+          parse(c6) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector(Parameter.Formal(Vector, false, PrimitiveType.Integer(Vector), "a"))),
+            ConstructorDeclarator("A", Vector(FormalParameter(Vector, false, IntegerPrimitive(Vector), "a"))),
             Vector(),
             Block(Vector)))
         }
         c7 in {
-          parse(c7) shouldBe Class(Declaration.Constructor(
+          parse(c7) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector(
-              Parameter.Formal(Vector, false, PrimitiveType.Integer(Vector), "a"),
-              Parameter.VariableArity(Vector, false, ArrayType(PrimitiveType.Integer(Vector), AbstractDimension(Vector)), "b"))),
+            ConstructorDeclarator("A", Vector(
+              FormalParameter(Vector, false, IntegerPrimitive(Vector), "a"),
+              VariableArityParameter(Vector, false, ArrayType(IntegerPrimitive(Vector), AbstractDimension(Vector)), "b"))),
             Vector(),
             Block(Vector)))
         }
         c8 in {
-          parse(c8) shouldBe Class(Declaration.Constructor(
+          parse(c8) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector(Parameter.InstanceReceiver(Vector, ClassType(Vector, None, "A", Vector)))),
+            ConstructorDeclarator("A", Vector(InstanceReceiverParameter(Vector, ClassType(Vector, None, "A", Vector)))),
             Vector(),
             Block(Vector)))
         }
         c9 in {
-          parse(c9) shouldBe Class(Declaration.Constructor(
+          parse(c9) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector(Parameter.NestedReceiver(Vector, ClassType(Vector, None, "A", Vector), "A"))),
+            ConstructorDeclarator("A", Vector(NestedReceiverParameter(Vector, ClassType(Vector, None, "A", Vector), "A"))),
             Vector(),
             Block(Vector)))
         }
         c10 in {
-          parse(c10) shouldBe Class(Declaration.Constructor(
+          parse(c10) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
-            Vector(Template.Parameter(Vector, "T")),
-            Declarator.Constructor("A", Vector()),
+            Vector(ParameterTemplate(Vector, "T")),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector)))
         }
         c11 in {
-          parse(c11) shouldBe Class(Declaration.Constructor(
+          parse(c11) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(ClassType(Vector, None, "A", Vector)),
             Block(Vector)))
         }
         c12 in {
-          parse(c12) shouldBe Class(Declaration.Constructor(
+          parse(c12) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector(
-              ConstructorInvocation.Alternate(Vector, Vector)))))
+              AlternateConstructorInvocation(Vector, Vector)))))
         }
         c13 in {
-          parse(c13) shouldBe Class(Declaration.Constructor(
+          parse(c13) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector(
-              ConstructorInvocation.Alternate(Vector(Template.Argument(ClassType(Vector, None, "T", Vector))), Vector)))))
+              AlternateConstructorInvocation(Vector(ArgumentTemplate(ClassType(Vector, None, "T", Vector))), Vector)))))
         }
         c14 in {
-          parse(c14) shouldBe Class(Declaration.Constructor(
+          parse(c14) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector(
-              ConstructorInvocation.Parent(Vector, Vector)))))
+              ParentConstructorInvocation(Vector, Vector)))))
         }
         c15 in {
-          parse(c15) shouldBe Class(Declaration.Constructor(
+          parse(c15) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector(
-              ConstructorInvocation.Parent(Vector(Template.Argument(ClassType(Vector, None, "T", Vector))), Vector)))))
+              ParentConstructorInvocation(Vector(ArgumentTemplate(ClassType(Vector, None, "T", Vector))), Vector)))))
         }
         c16 in {
-          parse(c16) shouldBe Class(Declaration.Constructor(
+          parse(c16) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector(
-              ConstructorInvocation.IndirectParent(Select("A"), Vector, Vector)))))
+              IndirectParentConstructorInvocation(Select("A"), Vector, Vector)))))
         }
         c17 in {
-          parse(c17) shouldBe Class(Declaration.Constructor(
+          parse(c17) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector(
-              ConstructorInvocation.IndirectParent(Select("A"), Template.Argument(ClassType(Vector, None, "T", Vector)), Vector)))))
+              IndirectParentConstructorInvocation(Select("A"), ArgumentTemplate(ClassType(Vector, None, "T", Vector)), Vector)))))
         }
         c18 in {
-          parse(c18) shouldBe Class(Declaration.Constructor(
+          parse(c18) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector(
-              ConstructorInvocation.Intermidiate(MethodInvocation(Vector, "a", Vector), Vector, Vector)))))
+              IntermidiateConstructorInvocation(MethodInvocation(Vector, "a", Vector), Vector, Vector)))))
         }
         c19 in {
-          parse(c19) shouldBe Class(Declaration.Constructor(
+          parse(c19) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector(
-              ConstructorInvocation.Intermidiate(MethodInvocation(Vector, "a", Vector), Template.Argument(ClassType(Vector, None, "T", Vector)), Vector)))))
+              IntermidiateConstructorInvocation(MethodInvocation(Vector, "a", Vector), ArgumentTemplate(ClassType(Vector, None, "T", Vector)), Vector)))))
         }
         c20 in {
-          parse(c20) shouldBe Class(Declaration.Constructor(
+          parse(c20) shouldBe Class(ConstructorDeclaration(
             Vector(),
             Vector(),
             Vector(),
-            Declarator.Constructor("A", Vector()),
+            ConstructorDeclarator("A", Vector()),
             Vector(),
             Block(Vector(
-              ConstructorInvocation.Intermidiate(Instantiation.Object(Vector, ClassType(Vector, None, "A", Vector), Vector), Vector, Vector)))))
+              IntermidiateConstructorInvocation(SimpleObjectInstantiation(Vector, ClassType(Vector, None, "A", Vector), 
+              Vector), Vector, Vector)))))
         }
         c21 in {
           parse(c21) shouldBe Class(
-            Declaration.Constructor(
+            ConstructorDeclaration(
               Vector(),
               Vector(),
               Vector(),
-              Declarator.Constructor(
+              ConstructorDeclarator(
                 "A",
                 Vector()),
               Vector(),
               Block(Vector)),
-            Declaration.Constructor(
+            ConstructorDeclaration(
               Vector(),
               Vector(),
               Vector(),
-              Declarator.Constructor(
+              ConstructorDeclarator(
                 "A",
-                Vector(Parameter.Formal(Vector, false, PrimitiveType.Integer(Vector), "a"))),
+                Vector(FormalParameter(Vector, false, IntegerPrimitive(Vector), "a"))),
               Vector(),
               Block(Vector)))
         }
         c22 in {
-          parse(c22) shouldBe Class(Declaration.Field(
+          parse(c22) shouldBe Class(FieldDeclaration(
             Vector,
-            Vector(Modifier.Private, Modifier.Static, Modifier.Final),
-            PrimitiveType.Byte(Vector),
-            Declarator.InitializedVariable(
-              "PAD", PrimitiveLiteral("'='"))))
+            Vector(Private, Static, Final),
+            BytePrimitive(Vector),
+            InitializedVariableDeclarator(
+              "PAD", CharLiteral("'='"))))
         }
       }
       "class declarations" - {
         "class A{class B{}}" in {
-          parse("class A{class B{}}") shouldBe Class(Declaration.Class(
+          parse("class A{class B{}}") shouldBe Class(ClassDeclaration(
             Vector, Vector, "B", Vector, None, Vector, Vector))
         }
       }
@@ -602,7 +618,7 @@ class ClassDeclarationTest extends ParserTest {
 
     "enums" - {
       "@A enum A{}" in {
-        parse("@A enum A{}") shouldBe Declaration.Enum(
+        parse("@A enum A{}") shouldBe EnumDeclaration(
           Vector(MarkerAnnotation("A")),
           Vector,
           "A",
@@ -610,63 +626,63 @@ class ClassDeclarationTest extends ParserTest {
           Vector)
       }
       "public enum A{}" in {
-        parse("public enum A{}") shouldBe Declaration.Enum(
+        parse("public enum A{}") shouldBe EnumDeclaration(
           Vector,
-          Vector(Modifier.Public),
+          Vector(Public),
           "A",
           Vector,
           Vector)
       }
       "protected enum A{}" in {
-        parse("protected enum A{}") shouldBe Declaration.Enum(
+        parse("protected enum A{}") shouldBe EnumDeclaration(
           Vector,
-          Vector(Modifier.Protected),
+          Vector(Protected),
           "A",
           Vector,
           Vector)
       }
       "private enum A{}" in {
-        parse("private enum A{}") shouldBe Declaration.Enum(
+        parse("private enum A{}") shouldBe EnumDeclaration(
           Vector,
-          Vector(Modifier.Private),
+          Vector(Private),
           "A",
           Vector,
           Vector)
       }
       "abstract enum A{}" in {
-        parse("abstract enum A{}") shouldBe Declaration.Enum(
+        parse("abstract enum A{}") shouldBe EnumDeclaration(
           Vector,
-          Vector(Modifier.Abstract),
+          Vector(Abstract),
           "A",
           Vector,
           Vector)
       }
       "static enum A{}" in {
-        parse("static enum A{}") shouldBe Declaration.Enum(
+        parse("static enum A{}") shouldBe EnumDeclaration(
           Vector,
-          Vector(Modifier.Static),
+          Vector(Static),
           "A",
           Vector,
           Vector)
       }
       "final enum A{}" in {
-        parse("final enum A{}") shouldBe Declaration.Enum(
+        parse("final enum A{}") shouldBe EnumDeclaration(
           Vector,
-          Vector(Modifier.Final),
+          Vector(Final),
           "A",
           Vector,
           Vector)
       }
       "strictfp enum A{}" in {
-        parse("strictfp enum A{}") shouldBe Declaration.Enum(
+        parse("strictfp enum A{}") shouldBe EnumDeclaration(
           Vector,
-          Vector(Modifier.Strictfp),
+          Vector(Strictfp),
           "A",
           Vector,
           Vector)
       }
       "enum A implements A{}" in {
-        parse("enum A implements A{}") shouldBe Declaration.Enum(
+        parse("enum A implements A{}") shouldBe EnumDeclaration(
           Vector,
           Vector,
           "A",
@@ -674,28 +690,28 @@ class ClassDeclarationTest extends ParserTest {
           Vector)
       }
       "enum A{A,B,C}" in {
-        parse("enum A{A,B,C}") shouldBe Declaration.Enum(
+        parse("enum A{A,B,C}") shouldBe EnumDeclaration(
           Vector,
           Vector,
           "A",
           Vector,
-          Vector(Declaration.EnumConstant(Vector, "A", Vector), Declaration.EnumConstant(Vector, "B", Vector), Declaration.EnumConstant(Vector, "C", Vector)))
+          Vector(EnumConstantDeclaration(Vector, "A", Vector), EnumConstantDeclaration(Vector, "B", Vector), EnumConstantDeclaration(Vector, "C", Vector)))
       }
       "enum A{A(1)}" in {
-        parse("enum A{A(1)}") shouldBe Declaration.Enum(
+        parse("enum A{A(1)}") shouldBe EnumDeclaration(
           Vector,
           Vector,
           "A",
           Vector,
-          Vector(Declaration.EnumConstant(Vector, "A", Vector(PrimitiveLiteral("1")))))
+          Vector(EnumConstantDeclaration(Vector, "A", Vector(IntegerLiteral("1")))))
       }
       "enum A{A{}}" in {
-        parse("enum A{A{}}") shouldBe Declaration.Enum(
+        parse("enum A{A{}}") shouldBe EnumDeclaration(
           Vector,
           Vector,
           "A",
           Vector,
-          Vector(Declaration.AnonymousEnumConstant(Vector, "A", Vector, Vector)))
+          Vector(AnonymousEnumConstantDeclaration(Vector, "A", Vector, Vector)))
       }
     }
   }

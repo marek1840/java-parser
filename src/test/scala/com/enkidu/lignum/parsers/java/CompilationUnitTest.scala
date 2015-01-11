@@ -1,64 +1,65 @@
 package com.enkidu.lignum.parsers.java
 
-import com.enkidu.lignum.parsers.types._
-import com.enkidu.lignum.parsers.expressions._
-import com.enkidu.lignum.parsers.statements._
 import com.enkidu.lignum.parsers.ParserTest
-import com.enkidu.lignum.parsers.JavaParser
+import com.enkidu.lignum.parsers.ast.statement.declaration.CompilationUnitDeclaration
+import com.enkidu.lignum.parsers.ast.statement.declaration.imports.{LazyImportDeclaration, SingleImportDeclaration, StaticImportDeclaration, StaticLazyImportDeclaration}
+import com.enkidu.lignum.parsers.ast.statement.declaration.packages.{NamedPackageDeclaration, UnnamedPackageDeclaration}
+import com.enkidu.lignum.parsers.ast.statement.declaration.types.{ClassDeclaration, EmptyDeclaration, InterfaceDeclaration}
+import com.enkidu.lignum.parsers.java.v8.JavaCompilationUnitParser
 
 class CompilationUnitTest extends ParserTest {
-  def parse(string: String): Declaration.CompilationUnit = {
-    implicit val parser = new JavaParser(string)
+  def parse(string: String): CompilationUnitDeclaration = {
+    implicit val parser = new JavaCompilationUnitParser(string)
     get(parser.compilationUnit.run())
   }
 
-  val p0 = """package a; import a;"""
-  val p1 = """package a; import a.*;"""
-  val p2 = """package a; import static a.b;"""
-  val p3 = """package a; import static a.*;"""
+  val p0 = """package a; imports a;"""
+  val p1 = """package a; imports a.*;"""
+  val p2 = """package a; imports static a.b;"""
+  val p3 = """package a; imports static a.*;"""
 
   "Compilation unit parser should parse" - {
     "" in {
-      parse("") shouldBe Declaration.CompilationUnit(
-        Declaration.UnnamedPackage,
+      parse("") shouldBe CompilationUnitDeclaration(
+        UnnamedPackageDeclaration,
         Vector,
         Vector)
     }
     "package a.b;" in {
-      parse("package a.b;") shouldBe Declaration.CompilationUnit(
-        Declaration.Package(Vector, Vector("a", "b")),
+      parse("package a.b;") shouldBe CompilationUnitDeclaration(
+        NamedPackageDeclaration(Vector, Vector("a", "b")),
         Vector,
         Vector)
     }
     p0 in {
-      parse(p0) shouldBe Declaration.CompilationUnit(
-        Declaration.Package(Vector, "a"),
-        Declaration.SingleImport("a"),
+      parse(p0) shouldBe CompilationUnitDeclaration(
+        NamedPackageDeclaration(Vector, "a"),
+        SingleImportDeclaration("a"),
         Vector)
     }
     p1 in {
-      parse(p1) shouldBe Declaration.CompilationUnit(
-        Declaration.Package(Vector, "a"),
-        Declaration.LazyImport("a"),
+      parse(p1) shouldBe CompilationUnitDeclaration(
+        NamedPackageDeclaration(Vector, "a"),
+        LazyImportDeclaration("a"),
         Vector)
     }
     p2 in {
-      parse(p2) shouldBe Declaration.CompilationUnit(
-        Declaration.Package(Vector, "a"),
-        Declaration.StaticImport(Vector("a", "b")),
+      parse(p2) shouldBe CompilationUnitDeclaration(
+        NamedPackageDeclaration(Vector, "a"),
+        StaticImportDeclaration(Vector("a", "b")),
         Vector)
     }
     p3 in {
-      parse(p3) shouldBe Declaration.CompilationUnit(
-        Declaration.Package(Vector, "a"),
-        Declaration.StaticLazyImport("a"),
+      parse(p3) shouldBe CompilationUnitDeclaration(
+        NamedPackageDeclaration(Vector, "a"),
+        StaticLazyImportDeclaration("a"),
         Vector)
     }
     "class A{}" in {
-      parse("class A{}") shouldBe Declaration.CompilationUnit(
-        Declaration.UnnamedPackage,
+      parse("class A{}") shouldBe CompilationUnitDeclaration(
+        UnnamedPackageDeclaration,
         Vector,
-        Declaration.Class(
+        ClassDeclaration(
           Vector,
           Vector,
           "A",
@@ -68,10 +69,10 @@ class CompilationUnitTest extends ParserTest {
           Vector))
     }
     "interface A{}" in {
-      parse("interface A{}") shouldBe Declaration.CompilationUnit(
-        Declaration.UnnamedPackage,
+      parse("interface A{}") shouldBe CompilationUnitDeclaration(
+        UnnamedPackageDeclaration,
         Vector,
-        Declaration.Interface(
+        InterfaceDeclaration(
           Vector,
           Vector,
           "A",
@@ -80,10 +81,10 @@ class CompilationUnitTest extends ParserTest {
           Vector))
     }
     ";" in {
-      parse(";") shouldBe Declaration.CompilationUnit(
-        Declaration.UnnamedPackage,
+      parse(";") shouldBe CompilationUnitDeclaration(
+        UnnamedPackageDeclaration,
         Vector,
-        Declaration.Empty)
+        EmptyDeclaration)
     }
   }
 

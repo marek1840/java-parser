@@ -1,27 +1,44 @@
 package com.enkidu.lignum.parsers.java.expressions
 
-import com.enkidu.lignum.parsers.types._
-import com.enkidu.lignum.parsers.expressions._
-import com.enkidu.lignum.parsers.statements._
 import com.enkidu.lignum.parsers.ParserTest
-import com.enkidu.lignum.parsers.JavaParser
+import com.enkidu.lignum.parsers.ast.expression._
+import com.enkidu.lignum.parsers.ast.expression.discardable.binary.assignment.Binding
+import com.enkidu.lignum.parsers.ast.expression.discardable.binary.{MethodInvocation, QualifiedMethodInvocation}
+import com.enkidu.lignum.parsers.ast.expression.discardable.dimension.AbstractDimension
+import com.enkidu.lignum.parsers.ast.expression.discardable.instantiation.SimpleObjectInstantiation
+import com.enkidu.lignum.parsers.ast.expression.discardable.literals.IntegerLiteral
+import com.enkidu.lignum.parsers.ast.expression.discardable.unary.{PostDecrementation, PostIncrementation, PreDecrementation, PreIncrementation}
+import com.enkidu.lignum.parsers.ast.expression.discardable.{Select, ThisReference}
+import com.enkidu.lignum.parsers.ast.expression.operators.BinaryOperator
+import com.enkidu.lignum.parsers.ast.expression.types.annotations.MarkerAnnotation
+import com.enkidu.lignum.parsers.ast.expression.types.primitives.IntegerPrimitive
+import com.enkidu.lignum.parsers.ast.expression.types.references.{ArrayType, ClassType}
+import com.enkidu.lignum.parsers.ast.statement._
+import com.enkidu.lignum.parsers.ast.statement.conditional.{If, IfThenElse}
+import com.enkidu.lignum.parsers.ast.statement.declaration.LocalVariableDeclaration
+import com.enkidu.lignum.parsers.ast.statement.declarator.{InitializedArrayDeclarator, InitializedVariableDeclarator, VariableDeclarator}
+import com.enkidu.lignum.parsers.ast.statement.flow._
+import com.enkidu.lignum.parsers.ast.statement.interruptable._
+import com.enkidu.lignum.parsers.ast.statement.loop._
+import com.enkidu.lignum.parsers.ast.statement.switch.{DefaultSwitch, EmptySwitchCases, SwitchCases, SwitchStatement}
+import com.enkidu.lignum.parsers.java.v8.JavaCompilationUnitParser
 
 class StatementsTest extends ParserTest {
   def parse(string: String): Statement = {
-    implicit val parser = new JavaParser(string)
+    implicit val parser = new JavaCompilationUnitParser(string)
     get(parser.blockStatement.run())
   }
 
   "Statement parser should parse" - {
     "local variable declaration" - {
-      "int a;" in { parse("int a;") shouldBe Declaration.LocalVariable(Vector(), false, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a"))) }
-      "@A  int a;" in { parse("@A  int a;") shouldBe Declaration.LocalVariable(Vector(MarkerAnnotation("A")), false, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a"))) }
-      "final int a;" in { parse("final int a;") shouldBe Declaration.LocalVariable(Vector(), true, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a"))) }
-      "@A final int a;" in { parse("@A final int a;") shouldBe Declaration.LocalVariable(Vector(MarkerAnnotation("A")), true, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a"))) }
-      "@A final @A int a;" in { parse("@A final @A int a;") shouldBe Declaration.LocalVariable(Vector(MarkerAnnotation("A"), MarkerAnnotation("A")), true, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a"))) }
+      "int a;" in { parse("int a;") shouldBe LocalVariableDeclaration(Vector(), false, IntegerPrimitive(Vector), Vector(VariableDeclarator("a"))) }
+      "@A  int a;" in { parse("@A  int a;") shouldBe LocalVariableDeclaration(Vector(MarkerAnnotation("A")), false, IntegerPrimitive(Vector), Vector(VariableDeclarator("a"))) }
+      "final int a;" in { parse("final int a;") shouldBe LocalVariableDeclaration(Vector(), true, IntegerPrimitive(Vector), Vector(VariableDeclarator("a"))) }
+      "@A final int a;" in { parse("@A final int a;") shouldBe LocalVariableDeclaration(Vector(MarkerAnnotation("A")), true, IntegerPrimitive(Vector), Vector(VariableDeclarator("a"))) }
+      "@A final @A int a;" in { parse("@A final @A int a;") shouldBe LocalVariableDeclaration(Vector(MarkerAnnotation("A"), MarkerAnnotation("A")), true, IntegerPrimitive(Vector), Vector(VariableDeclarator("a"))) }
 
-      "int a, y[] = x;" in { parse("int a, y[] = x;") shouldBe Declaration.LocalVariable(Vector(), false, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("a"), Declarator.InitializedArray("y", Vector(AbstractDimension(Vector)), Select("x")))) }
-      "Class a, b = new Class(), c;" in { parse("Class a, b = new Class(), c;") shouldBe Declaration.LocalVariable(Vector(), false, ClassType(Vector, None, "Class", Vector), Vector(Declarator.Variable("a"), Declarator.InitializedVariable("b", Instantiation.Object(Vector, ClassType(Vector, None, "Class", Vector), Vector)), Declarator.Variable("c"))) }
+      "int a, y[] = x;" in { parse("int a, y[] = x;") shouldBe LocalVariableDeclaration(Vector(), false, IntegerPrimitive(Vector), Vector(VariableDeclarator("a"), InitializedArrayDeclarator("y", Vector(AbstractDimension(Vector)), Select("x")))) }
+      "Class a, b = new Class(), c;" in { parse("Class a, b = new Class(), c;") shouldBe LocalVariableDeclaration(Vector(), false, ClassType(Vector, None, "Class", Vector), Vector(VariableDeclarator("a"), InitializedVariableDeclarator("b", SimpleObjectInstantiation(Vector, ClassType(Vector, None, "Class", Vector), Vector)), VariableDeclarator("c"))) }
     }
     "discardable expression statements" - {
       "a = b;" in { parse("a = b;") shouldBe Binding(Select("a"), Select("b")) }
@@ -30,34 +47,35 @@ class StatementsTest extends ParserTest {
       "--a;" in { parse("--a;") shouldBe PreDecrementation(Select("a")) }
       "++a;" in { parse("++a;") shouldBe PreIncrementation(Select("a")) }
       "a().f();" in { parse("a().f();") shouldBe QualifiedMethodInvocation(MethodInvocation(Vector, "a", Vector), Vector, "f", Vector) }
-      "new Class();" in { parse("new Class();") shouldBe Instantiation.Object(Vector, ClassType(Vector, None, "Class", Vector), Vector) }
+      "new Class();" in { parse("new Class();") shouldBe SimpleObjectInstantiation(Vector, ClassType(Vector, None, "Class", Vector),
+        Vector) }
     }
     "assertions" - {
       "assert x;" in { parse("assert x;") shouldBe Assertion(Select("x"), None) }
       "assert x: y;" in { parse("assert x: y;") shouldBe Assertion(Select("x"), Some(Select("y"))) }
     }
     "flow statements" - {
-      "break;" in { parse("break;") shouldBe FlowStatement.Break }
-      "break a;" in { parse("break a;") shouldBe FlowStatement.TargetedBreak("a") }
-      "continue;" in { parse("continue;") shouldBe FlowStatement.Continue }
-      "continue a;" in { parse("continue a;") shouldBe FlowStatement.TargetedContinue("a") }
-      "return;" in { parse("return;") shouldBe FlowStatement.EmptyReturn }
-      "return a;" in { parse("return a;") shouldBe FlowStatement.Return(Select("a")) }
-      "throw a;" in { parse("throw a;") shouldBe FlowStatement.Throw(Select("a")) }
+      "break;" in { parse("break;") shouldBe Break }
+      "break a;" in { parse("break a;") shouldBe TargetedBreak("a") }
+      "continue;" in { parse("continue;") shouldBe Continue }
+      "continue a;" in { parse("continue a;") shouldBe TargetedContinue("a") }
+      "return;" in { parse("return;") shouldBe EmptyReturn }
+      "return a;" in { parse("return a;") shouldBe Return(Select("a")) }
+      "throw a;" in { parse("throw a;") shouldBe Throw(Select("a")) }
     }
     "synchronized blocks" - {
-      "synchronized {int x;}" in { parse("synchronized {int x;}") shouldBe SynchronizedBlock(None, Block(Declaration.LocalVariable(Vector, false, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("x"))))) }
-      "synchronized(this) {int x;}" in { parse("synchronized(this) {int x;}") shouldBe SynchronizedBlock(Some(ThisReference), Block(Declaration.LocalVariable(Vector, false, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("x"))))) }
+      "synchronized {int x;}" in { parse("synchronized {int x;}") shouldBe SynchronizedBlock(None, Block(LocalVariableDeclaration(Vector, false, IntegerPrimitive(Vector), Vector(VariableDeclarator("x"))))) }
+      "synchronized(this) {int x;}" in { parse("synchronized(this) {int x;}") shouldBe SynchronizedBlock(Some(ThisReference), Block(LocalVariableDeclaration(Vector, false, IntegerPrimitive(Vector), Vector(VariableDeclarator("x"))))) }
     }
     "try statements" - {
-      val tb = Block(Vector(Declaration.LocalVariable(Vector, false, PrimitiveType.Integer(Vector), Vector(Declarator.Variable("x")))))
+      val tb = Block(Vector(LocalVariableDeclaration(Vector, false, IntegerPrimitive(Vector), Vector(VariableDeclarator("x")))))
       val fb = Block(Vector())
-      val cs = Vector(CatchClause(Declaration.LocalVariable(Vector, true, ClassType(Vector, None, "Exception", Vector), Declarator.Variable("e")), Block(Vector)))
+      val cs = Vector(CatchClause(LocalVariableDeclaration(Vector, true, ClassType(Vector, None, "Exception", Vector), VariableDeclarator("e")), Block(Vector)))
 
       "try {int x;} catch(Exception e){}" in { parse("try {int x;} catch(Exception e){}") shouldBe TryCatch(tb, cs) }
       "try {int x;} finally{}" in { parse("try {int x;} finally{}") shouldBe TryFinally(tb, fb) }
       "try {int x;} catch(Exception e){} finally{}" in { parse("try {int x;} catch(Exception e){} finally{}") shouldBe TryCatchFinally(tb, cs, fb) }
-      "try(C c = new C()){int x;} catch(Exception e){} finally{}" in { parse("try(C c = new C()){int x;} catch(Exception e){} finally{}") shouldBe TryWithResources(Vector(Declaration.LocalVariable(Vector, true, ClassType(Vector, None, "C", Vector), Vector(Declarator.InitializedVariable("c", Instantiation.Object(Vector, ClassType(Vector, None, "C", Vector), Vector))))), tb, cs, Some(fb)) }
+      "try(C c = new C()){int x;} catch(Exception e){} finally{}" in { parse("try(C c = new C()){int x;} catch(Exception e){} finally{}") shouldBe TryWithResources(Vector(LocalVariableDeclaration(Vector, true, ClassType(Vector, None, "C", Vector), Vector(InitializedVariableDeclarator("c", SimpleObjectInstantiation(Vector, ClassType(Vector, None, "C", Vector), Vector))))), tb, cs, Some(fb)) }
     }
     "switch statements" - {
       val s =
@@ -80,35 +98,35 @@ class StatementsTest extends ParserTest {
       "switch(a){}" in { parse("switch(a){}") shouldBe SwitchStatement(Select("a"), Vector) }
       s in {
         parse(s) shouldBe SwitchStatement(Select("a"), Vector(
-          Switch.Cases(Vector(PrimitiveLiteral("0"), PrimitiveLiteral("1")), EmptyStatement),
-          Switch.Cases(Vector(Switch.Default), FlowStatement.Break),
-          Switch.Cases(Vector(Select(Vector("Enum", "Value"))), EmptyStatement),
-          Switch.EmptyCases(Vector(PrimitiveLiteral("3"), PrimitiveLiteral("4")))))
+          SwitchCases(Vector(IntegerLiteral("0"), IntegerLiteral("1")), EmptyStatement),
+          SwitchCases(Vector(DefaultSwitch), Break),
+          SwitchCases(Vector(Select(Vector("Enum", "Value"))), EmptyStatement),
+          EmptySwitchCases(Vector(IntegerLiteral("3"), IntegerLiteral("4")))))
       }
       s2 in {
         parse(s2) shouldBe SwitchStatement(Select(Vector("data")), Vector(
-          Switch.Cases(Vector(Switch.Default), Vector(
-            Binding(Select(Vector("packet")), Instantiation.Object(Vector(), ClassType(Vector(), None, "Packet", Vector()), Vector(Select(Vector("datagram"))))),
-            FlowStatement.Break))))
+          SwitchCases(Vector(DefaultSwitch), Vector(
+            Binding(Select(Vector("packet")), SimpleObjectInstantiation(Vector(), ClassType(Vector(), None, "Packet", Vector()), Vector(Select(Vector("datagram"))))),
+            Break))))
       }
     }
     "labeled statements" - {
       "label: {}" in { parse("label: {}") shouldBe LabeledStatement("label", Block(Vector)) }
     }
     "conditional statements" - {
-      "if(a) {}" in { parse("if(a) {}") shouldBe Conditional.If(Select("a"), Block(Vector)) }
-      "if(a) {} else {}" in { parse("if(a) {} else {}") shouldBe Conditional.IfThenElse(Select("a"), Block(Vector), Block(Vector)) }
-      "if(a) if(b) {} else {}" in { parse("if(a) if(b) {} else {}") shouldBe Conditional.If(Select("a"), Conditional.IfThenElse(Select("b"), Block(Vector), Block(Vector))) }
-      "if(a) if(b) {} else {} else{}" in { parse("if(a) if(b) {} else {} else{}") shouldBe Conditional.IfThenElse(Select("a"), Conditional.IfThenElse(Select("b"), Block(Vector), Block(Vector)), Block(Vector)) }
+      "if(a) {}" in { parse("if(a) {}") shouldBe If(Select("a"), Block(Vector)) }
+      "if(a) {} else {}" in { parse("if(a) {} else {}") shouldBe IfThenElse(Select("a"), Block(Vector), Block(Vector)) }
+      "if(a) if(b) {} else {}" in { parse("if(a) if(b) {} else {}") shouldBe If(Select("a"), IfThenElse(Select("b"), Block(Vector), Block(Vector))) }
+      "if(a) if(b) {} else {} else{}" in { parse("if(a) if(b) {} else {} else{}") shouldBe IfThenElse(Select("a"), IfThenElse(Select("b"), Block(Vector), Block(Vector)), Block(Vector)) }
     }
     "loops" - {
-      "for(;;);" in { parse("for(;;);") shouldBe Loop.For(Vector, None, Vector, EmptyStatement) }
-      "for (;a instanceof Object[];);" in { parse("for (;a instanceof Object[];);") shouldBe Loop.For(Vector, Some(BinaryOperationChain(BinaryOperator.instanceof, Vector(Select("a"), ArrayType(ClassType(Vector, None, "Object", Vector), Seq(AbstractDimension(Vector)))))), Vector, EmptyStatement) }
-      "for(f(); i < 10; ++i)" in { parse("for(f(); i < 10; ++i){}") shouldBe Loop.For(Vector(MethodInvocation(Vector, "f", Vector)), BinaryOperationChain(BinaryOperator.<, Vector(Select("i"), PrimitiveLiteral("10"))), Vector(PreIncrementation(Select("i"))), Block(Vector)) }
-      "for(int i = 0, j = i; i < 10; ++i, j++){}" in { parse("for(int i = 0, j=i; i < 10; ++i, j++){}") shouldBe Loop.For(Vector(Declaration.LocalVariable(Vector, false, PrimitiveType.Integer(Vector), Vector(Declarator.InitializedVariable("i", PrimitiveLiteral("0")), Declarator.InitializedVariable("j", Select("i"))))), BinaryOperationChain(BinaryOperator.<, Vector(Select("i"), PrimitiveLiteral("10"))), Vector(PreIncrementation(Select("i")), PostIncrementation(Select("j"))), Block(Vector)) }
-      "for(X x :xs){}" in { parse("for(X x :xs){}") shouldBe Loop.Iteration(Declaration.LocalVariable(Vector, false, ClassType(Vector, None, "X", Vector), Vector(Declarator.Variable("x"))), Select("xs"), Block(Vector)) }
-      "do ++a; while (b);" in { parse("do ++a; while (b);") shouldBe Loop.DoWhile(PreIncrementation(Select("a")), Select("b")) }
-      "while (b) ++a;" in { parse("while (b) ++a;") shouldBe Loop.While(Select("b"), PreIncrementation(Select("a"))) }
+      "for(;;);" in { parse("for(;;);") shouldBe For(Vector, None, Vector, EmptyStatement) }
+      "for (;a instanceof Object[];);" in { parse("for (;a instanceof Object[];);") shouldBe For(Vector, Some(BinaryOperations(BinaryOperator.instanceof, Vector(Select("a"), ArrayType(ClassType(Vector, None, "Object", Vector), Seq(AbstractDimension(Vector)))))), Vector, EmptyStatement) }
+      "for(f(); i < 10; ++i)" in { parse("for(f(); i < 10; ++i){}") shouldBe For(Vector(MethodInvocation(Vector, "f", Vector)), BinaryOperations(BinaryOperator.<, Vector(Select("i"), IntegerLiteral("10"))), Vector(PreIncrementation(Select("i"))), Block(Vector)) }
+      "for(int i = 0, j = i; i < 10; ++i, j++){}" in { parse("for(int i = 0, j=i; i < 10; ++i, j++){}") shouldBe For(Vector(LocalVariableDeclaration(Vector, false, IntegerPrimitive(Vector), Vector(InitializedVariableDeclarator("i", IntegerLiteral("0")), InitializedVariableDeclarator("j", Select("i"))))), BinaryOperations(BinaryOperator.<, Vector(Select("i"), IntegerLiteral("10"))), Vector(PreIncrementation(Select("i")), PostIncrementation(Select("j"))), Block(Vector)) }
+      "for(X x :xs){}" in { parse("for(X x :xs){}") shouldBe Iteration(LocalVariableDeclaration(Vector, false, ClassType(Vector, None, "X", Vector), Vector(VariableDeclarator("x"))), Select("xs"), Block(Vector)) }
+      "do ++a; while (b);" in { parse("do ++a; while (b);") shouldBe DoWhile(PreIncrementation(Select("a")), Select("b")) }
+      "while (b) ++a;" in { parse("while (b) ++a;") shouldBe While(Select("b"), PreIncrementation(Select("a"))) }
     }
 
   }

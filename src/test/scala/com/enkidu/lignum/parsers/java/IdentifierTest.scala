@@ -1,14 +1,11 @@
 package com.enkidu.lignum.parsers.java
 
-import com.enkidu.lignum.parsers.types._
-import com.enkidu.lignum.parsers.expressions._
-import com.enkidu.lignum.parsers.statements._
 import com.enkidu.lignum.parsers.ParserTest
-import com.enkidu.lignum.parsers.JavaParser
+import com.enkidu.lignum.parsers.java.v8.JavaCompilationUnitParser
 
 class IdentifierTest extends ParserTest {
   def parse(string: String): Seq[String] = {
-    implicit val parser = new JavaParser(string)
+    implicit val parser = new JavaCompilationUnitParser(string)
     get(parser.qualifiedIdentifier.run())
   }
 
@@ -59,7 +56,7 @@ class IdentifierTest extends ParserTest {
         "throw" in (a[Exception] should be thrownBy parse("throw"))
         "byte" in (a[Exception] should be thrownBy parse("byte"))
         "else" in (a[Exception] should be thrownBy parse("else"))
-        "import" in (a[Exception] should be thrownBy parse("import"))
+        "imports" in (a[Exception] should be thrownBy parse("imports"))
         "public" in (a[Exception] should be thrownBy parse("public"))
         "throws" in (a[Exception] should be thrownBy parse("throws"))
         "case" in (a[Exception] should be thrownBy parse("case"))
